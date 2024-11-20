@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node.js Game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+    
+        let players = {};
+        let ball = {};
+    
+        // Draw the game state
+        function draw() {
+            // Reset transformations and clear the canvas
+            ctx.save(); // Save the current transformation state
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformations
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the entire canvas
+            ctx.restore(); // Restore the previous transformation state
+    
+            // Translate to the center of the canvas
+            ctx.save(); // Save before translating
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+    
+            // Draw players
+            for (const id in players) {
+                const player = players[id];
+    
+                // Log player data for debugging
+                console.log(`Drawing player ${id} at y=${player.y}, angle=${player.angle}`);
+    
+                ctx.save(); // Save the state before rotating
+    
+                // Rotate the canvas by the player's angle
+                ctx.rotate(player.angle);
+    
+                // Calculate the rectangle position relative to the center
+                const distFromCenter = canvas.width / 3;
+                const _x = distFromCenter / Math.sqrt(2);
+    
+                // Draw a filled rectangle representing the player
+                ctx.fillStyle = 'blue';
+                ctx.fillRect(_x, -50 + player.y, 20, 100);
+    
+                ctx.restore(); // Restore the state to undo the rotation
+            }
+    
+            ctx.restore(); // Restore the canvas after all translations
+    
+            // Draw a ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2); // Circle
+            ctx.fillStyle = '#ff0000'; // Red color
+            ctx.fill();
+            ctx.closePath();
+
+            // Request the next frame
+            requestAnimationFrame(draw);
+        }
+    
+        // Handle key presses
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'a' || e.key === 'd') {
+                socket.emit('playerMove', e.key); // Send key press to the server
+            }
+        });
+    
+        // Receive updates for all players
+        socket.on('updatePlayers', (data) => {
+            players = data; // Update the players object
+            console.log('Updated players:', players); // Debugging: log the updated players
+        });
+
+        // Receive updates for ball
+        socket.on('ball', (data) => {
+            ball = data; // Update the players object
+            console.log('Updated ball:', ball); // Debugging: log the updated players
+        });
+    
+        // Start the game loop
+        draw();
+    </script>
+    
+    
+</body>
+</html>
