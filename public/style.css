@@ -15,20 +15,30 @@ body {
     align-items: center;
     height: 100vh;
     background-color: black;
+    position: relative;
 }
 
-canvas {
-    position:absolute;
-    width:300px;
-    height:300px;
+#stage {
+    position: absolute;
+    width: 300px;
+    height: 300px;
     background-image: url('nebula.jpg');
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
+    z-index: 1;
+    display: none;
+}
+
+canvas {
+    position: absolute;
+    width: 300px;
+    height: 300px;
     border-style: double;
     border-color: white;
     border-width: 4px;
-    display: none
+    z-index: 2;
+    display: none;
 }
 
 button {
