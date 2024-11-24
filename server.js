@@ -78,14 +78,12 @@ wss.on('connection', (ws) => {
     players[playerId] = { pos: 0, offset: 0 };
     arrangePlayers();
 
-    broadcast({ type: 'updateArena', updatedArena: arena });
-    broadcast({ type: 'updatePlayers', updatedPlayers: players });
+    broadcast({ type: 'updateArena', updatedArena: arena, updatedPlayers: players });
 
     ws.on('message', (message) => {
         const data = JSON.parse(message);
         if (data.type === 'move') {
             players[playerId].offset = data.offset
-            broadcast({ type: 'updatePlayers', updatedPlayers: players });
         }
     });
 
@@ -93,8 +91,7 @@ wss.on('connection', (ws) => {
         console.log('Player disconnected:', playerId);
         delete players[playerId];
         arrangePlayers();
-        broadcast({ type: 'updateArena', updatedArena: arena });
-        broadcast({ type: 'updatePlayers', updatedPlayers: players });
+        broadcast({ type: 'updateArena', updatedArena: arena, updatedPlayers: players });
     });
 });
 
@@ -122,8 +119,7 @@ setInterval(() => {
         accumulator -= dt;
     }
 
-    broadcast({ type: 'updatePlayers', updatedPlayers: players });
-    broadcast({ type: 'ballPosition', updatedBall: ball });
+    broadcast({ type: 'updateState', updatedBall: ball, updatedPlayers: players});
 }, 16);
 
 // Function to generate random forces within a given range

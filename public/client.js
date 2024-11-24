@@ -1,4 +1,5 @@
 const canvas = document.getElementById('gameCanvas');
+const backgroundImage = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
 const canvasHeight = 300;
 const halfCanvasHeight = 150;
@@ -12,6 +13,10 @@ if (window.innerWidth > 600 && window.innerHeight > 600) {
         canvas.height = 900;
         canvas.style.width = "900px";
         canvas.style.height = "900px";
+        backgroundImage.width = 900;
+        backgroundImage.height = 900;
+        backgroundImage.style.width = "900px";
+        backgroundImage.style.height = "900px";
         scaleFactor = 3;
     }
     else {
@@ -19,6 +24,10 @@ if (window.innerWidth > 600 && window.innerHeight > 600) {
         canvas.height = 600;
         canvas.style.width = "600px";
         canvas.style.height = "600px";
+        backgroundImage.width = 600;
+        backgroundImage.height = 600;
+        backgroundImage.style.width = "600px";
+        backgroundImage.style.height = "600px";
         scaleFactor = 2;
     }
 }
@@ -36,9 +45,10 @@ const bradius = 4;
 
 document.getElementById('button').addEventListener('click', () => {
     document.getElementById('button').style.display = 'none';
+    backgroundImage.style.display = 'block';
     canvas.style.display = 'block';
 
-    const socket = new WebSocket('ws://localhost:3000');
+    const socket = new WebSocket('ws://localhost:3000'); // 178.128.25.130
 
     socket.onopen = () => {
         console.log('WebSocket connection established');
@@ -51,15 +61,13 @@ document.getElementById('button').addEventListener('click', () => {
             console.log(myId);
         } else if (message.type === 'updateArena') {
             arena = message.updatedArena;
+            players = message.updatedPlayers;
             console.log(arena[myId].angle);
             myAngle = arena[myId].angle;
             pMoveOffset = (myAngle > 1.5708 && myAngle < 4.7123) ? -pSpeed : pSpeed;
-            // render();
-        } else if (message.type === 'updatePlayers') {
-            players = message.updatedPlayers;
-            render();
-        } else if (message.type === 'ballPosition') {
+        } else if (message.type === 'updateState') {
             ball = message.updatedBall;
+            players = message.updatedPlayers;
             render();
         }
     };
