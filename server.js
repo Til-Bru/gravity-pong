@@ -26,7 +26,7 @@ let ball = {
     score: 0,
     vx: 0,
     vy: 0,
-    mass: 1
+    mass: 1,
     combo: 0,
 };
 const bradius = 4;
@@ -129,8 +129,8 @@ setInterval(() => {
 // Function to generate random forces within a given range
 let previousForceAngle = 0
 function generateRandomForce() {
-    const fx = Math.floor(Math.random() * 41) - 20; 
-    const fy = Math.floor(Math.random() * 41) - 20;
+    const fx = Math.floor(Math.random() * 81) - 40; 
+    const fy = Math.floor(Math.random() * 81) - 40;
     
     return { 
         fx: fx, 
@@ -207,7 +207,7 @@ function advanceState(dt) {
     if (forces.length >= 1) {
         //Get Force
         const forceSegment = getForce(ball);
-        console.log(forceSegment)
+        // console.log(forceSegment)
         const force = forces[forceSegment];
 
         // Calculate acceleration
