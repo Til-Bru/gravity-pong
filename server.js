@@ -279,7 +279,7 @@ function advanceState(dt) {
 
                 if (bx + bradius >= arena.radius && bx - bradius <= arena.radius + arena.pThin) {
                     const bnormy = by - player_position;
-                    if (bnormy + bradius > -arena.pLong / 2 && bnormy - bradius < arena.pLong / 2) {
+                    if ( (bnormy + bradius > -arena.pLong / 2 && bnormy - bradius < arena.pLong / 2) && playerCollisionCnt==0) {
                         const bnormheading = ball.heading - player_angle;
                         const newheading = player_angle + Math.PI - bnormheading;
                         ball.heading = (newheading) % (Math.PI * 2);
