@@ -22,9 +22,10 @@ if (window.innerWidth > 600 && window.innerHeight > 600) {
         scaleFactor = 2;
     }
 }
- 
+
 
 let myId;
+let myAngle = 0;
 let players = {};
 let arena = { radius: 140, pLong: 40, pThin: 3 };
 
@@ -45,8 +46,11 @@ document.getElementById('button').addEventListener('click', () => {
         const message = JSON.parse(event.data);
         if (message.type === 'yourId') {
             myId = message.id;
+            console.log(myId);
         } else if (message.type === 'updateArena') {
             arena = message.updatedArena;
+            console.log(arena[myId].angle);
+            myAngle = arena[myId].angle;
             // render();
         } else if (message.type === 'updatePlayers') {
             players = message.updatedPlayers;
@@ -58,10 +62,14 @@ document.getElementById('button').addEventListener('click', () => {
     };
 
     window.addEventListener('keydown', (event) => {
+        let pOffset = 5;
+        if (myAngle > 1.5708 && myAngle < 4.7124) {
+            pOffset = -pOffset;
+        }
         if (event.key === 'ArrowLeft' || event.key === 'a') {
-            socket.send(JSON.stringify({ type: 'move', offset: 5 }));
+            socket.send(JSON.stringify({ type: 'move', offset: pOffset }));
         } else if (event.key === 'ArrowRight' || event.key === 'd') {
-            socket.send(JSON.stringify({ type: 'move', offset: -5 }));
+            socket.send(JSON.stringify({ type: 'move', offset: -pOffset }));
         }
     });
 
@@ -77,10 +85,15 @@ document.getElementById('button').addEventListener('click', () => {
         const touch = event.touches[0];
         const screenWidth = window.innerWidth;
 
+        let pOffset = 5;
+        if (myAngle > 1.5708 && myAngle < 4.7123) {
+            pOffset = -pOffset;
+        }
+
         if (touch.clientX < screenWidth / 2) {
-            socket.send(JSON.stringify({ type: 'move', offset: 5 }));
+            socket.send(JSON.stringify({ type: 'move', offset: pOffset }));
         } else {
-            socket.send(JSON.stringify({ type: 'move', offset: -5 }));
+            socket.send(JSON.stringify({ type: 'move', offset: -pOffset }));
         }
     });
 
