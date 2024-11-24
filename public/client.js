@@ -116,7 +116,7 @@ function render() {
         const player_position = players[playerId].pos;
         ctx.save();
         ctx.rotate(player_angle);
-        ctx.fillStyle = playerId == myId ? 'yellow' : 'white';
+        ctx.fillStyle = arena[playerId].color;
         ctx.fillRect(arena.radius, player_position - arena.pLong / 2, arena.pThin, arena.pLong);
         ctx.restore();
     });

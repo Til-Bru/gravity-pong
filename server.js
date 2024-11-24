@@ -42,12 +42,30 @@ const arrangePlayers = () => {
     arena.pLong = totalPlayers > 5 ? 50 - 5*(totalPlayers-5) : 50;
 };
 
+const playerColors = [
+    '#ff5733', // Red-Orange
+    '#33ff57', // Green
+    '#3357ff', // Blue
+    '#ff33a1', // Pink
+    '#ffbd33', // Yellow-Orange
+    '#33fff5', // Cyan
+    '#306430', // Dark green
+    '#ffffff', // White
+    '#a133ff', // Purple
+    '#FFDE21', // Yellow
+];
+let currentColorIndex = 0;
+
 wss.on('connection', (ws) => {
     const playerId = Date.now(); // Use timestamp as a unique ID
     console.log('A player connected:', playerId);
     ws.send(JSON.stringify({ type: 'yourId', id: playerId }));
 
-    arena[playerId] = { angle: 0 };
+    const pColor = playerColors[currentColorIndex];
+    currentColorIndex = (currentColorIndex + 1) % playerColors.length;
+
+    arena[playerId] = { angle: 0, color: pColor };
+    
     players[playerId] = { pos: 0, offset: 0 };
     arrangePlayers();
 
