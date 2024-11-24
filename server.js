@@ -71,14 +71,12 @@ wss.on('connection', (ws) => {
     players[playerId] = { pos: 0, offset: 0 };
     arrangePlayers();
 
-    broadcast({ type: 'updateArena', updatedArena: arena });
-    broadcast({ type: 'updatePlayers', updatedPlayers: players });
+    broadcast({ type: 'updateArena', updatedArena: arena, updatedPlayers: players });
 
     ws.on('message', (message) => {
         const data = JSON.parse(message);
         if (data.type === 'move') {
             players[playerId].offset = data.offset
-            broadcast({ type: 'updatePlayers', updatedPlayers: players });
         }
     });
 
@@ -86,8 +84,7 @@ wss.on('connection', (ws) => {
         console.log('Player disconnected:', playerId);
         delete players[playerId];
         arrangePlayers();
-        broadcast({ type: 'updateArena', updatedArena: arena });
-        broadcast({ type: 'updatePlayers', updatedPlayers: players });
+        broadcast({ type: 'updateArena', updatedArena: arena, updatedPlayers: players });
     });
 });
 
@@ -115,8 +112,7 @@ setInterval(() => {
         accumulator -= dt;
     }
 
-    broadcast({ type: 'updatePlayers', updatedPlayers: players });
-    broadcast({ type: 'ballPosition', updatedBall: ball });
+    broadcast({ type: 'updateState', updatedBall: ball, updatedPlayers: players});
 }, 16);
 
 let lastBounceId = 0;
@@ -131,8 +127,6 @@ function advanceState(dt) {
 
     let dx = Math.cos(ball.heading) * bspeed * dt * 1000;
     let dy = Math.sin(ball.heading) * bspeed * dt * 1000;
-
-    // ball.heading = Math.atan2(dy, dx);
 
     ball.x += dx;
     ball.y += dy;
