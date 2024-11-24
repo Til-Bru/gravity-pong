@@ -9,6 +9,7 @@ const wss = new WebSocket.Server({ server });
 const PORT = process.env.PORT || 3000;
 
 let arena = { radius : 140, pLong: 50, pThin: 3 };
+let playerMoveLimit = 150;
 let players = {};
 const playerSpeed = 20;
 
@@ -120,7 +121,10 @@ setInterval(() => {
 function advanceState(dt) {
     // player movement
     Object.keys(players).forEach(playerId => {
-        players[playerId].pos += players[playerId].offset;
+        if (players[playerId].offset != 0) {
+            const newPos = players[playerId].pos + players[playerId].offset
+            if (Math.abs(newPos) < 130) players[playerId].pos = newPos;
+        }
     })
 
     let dx = Math.cos(ball.heading) * bspeed * dt * 1000;
