@@ -24,6 +24,9 @@ let ball = {
     angle: 0,
     heading: Math.PI / 5,
     score: 0,
+    vx: 0,
+    vy: 0,
+    mass: 1
     combo: 0,
 };
 const bradius = 4;
@@ -39,6 +42,10 @@ const arrangePlayers = () => {
     playerIds.forEach((playerId, index) => {
         arena[playerId].angle = angleStep * index;
     });
+
+
+    //Re initialize forces
+    initializeForces();
 
     arena.radius = totalPlayers == 3 ? 100 : 110;
     arena.pLong = totalPlayers > 5 ? 50 - 5*(totalPlayers-5) : 50;
@@ -119,6 +126,74 @@ setInterval(() => {
     broadcast({ type: 'ballPosition', updatedBall: ball });
 }, 16);
 
+// Function to generate random forces within a given range
+let previousForceAngle = 0
+function generateRandomForce() {
+    const fx = Math.floor(Math.random() * 41) - 20; 
+    const fy = Math.floor(Math.random() * 41) - 20;
+    
+    return { 
+        fx: fx, 
+        fy: fy
+    };
+}
+
+// Init forces
+function initializeForces() {
+
+    forces = [];
+
+    const playerIds = Object.keys(players);
+
+    playerIds.forEach((playerId, index) => {
+        forces.push(generateRandomForce());
+    });
+}
+
+// Re init force segments
+function reInitForces(exludedSegment) {
+    for (let i = 0; i < forces.length; i++) {
+
+        if (i != exludedSegment) {
+            //Re init force segments where ball is currently not in
+            forces[i] = generateRandomForce();
+        }
+    }
+}
+
+//Add Force segment
+function addForce() {
+    forces.push(generateRandomForce());
+}
+
+// Function to determine the active force based on ball's position
+// Function to calculate angle and determine the active force
+function getForce(ball) {
+    // Calculate angle (atan2 returns in radians)
+    const dx = ball.x; // Offset from the center
+    const dy = ball.y;
+    let angle = (Math.atan2(dy, dx)) * (180 / Math.PI); // Convert to degrees
+
+
+    // Normalize angle to [0, 360)
+    if (angle < 0) angle += 360;
+
+    // Determine the segment 
+    const segment = Math.floor(angle / (360 / forces.length));
+
+    // Return the corresponding force
+    return segment;
+}
+
+// Force definitions
+let forces = [];
+
+
+//Collision
+let wallCollisionCnt_x = 0
+let wallCollisionCnt_y = 0
+let playerCollisionCnt = 0
+
 let lastBounceId = 0;
 function advanceState(dt) {
     // player movement
@@ -129,54 +204,113 @@ function advanceState(dt) {
         }
     })
 
-    let dx = Math.cos(ball.heading) * bspeed * dt * 1000;
-    let dy = Math.sin(ball.heading) * bspeed * dt * 1000;
+    if (forces.length >= 1) {
+        //Get Force
+        const forceSegment = getForce(ball);
+        console.log(forceSegment)
+        const force = forces[forceSegment];
 
-    // ball.heading = Math.atan2(dy, dx);
+        // Calculate acceleration
+        const ax = force.fx / ball.mass;
+        const ay = force.fy / ball.mass;
+        // Update position
+        let dx =  ball.vx * dt + (ax * dt * dt) / 2;
+        let dy =  ball.vy * dt + (ay * dt * dt) / 2;
+        // Update velocity
+        ball.vx = dx / dt;
+        ball.vy = dy / dt;
 
-    ball.x += dx;
-    ball.y += dy;
-    ball.angle = Math.atan2(ball.y, ball.x);
+        // Calculate Heading
+        ball.heading = Math.atan2(dy, dx);
 
-    const bdist = Math.sqrt(ball.x * ball.x + ball.y * ball.y);
-    if (bdist > arena.radius - 10) {
-        // Check for wall collisions
-        if (ball.x <= -halfCanvasWidth + bradius || ball.x >= halfCanvasWidth - bradius) {
-            ball.heading = (Math.PI - ball.heading) % (2 * Math.PI);
-            ball.score -= 1;
-            ball.combo = 0;
-            lastBounceId = 0;
-        }
-        if (ball.y <= -halfCanvasHeight + bradius || ball.y >= halfCanvasHeight - bradius) {
-            ball.heading = -ball.heading;
-            ball.score -= 1;
-            ball.combo = 0;
-            lastBounceId = 0;
-        }
+        //Change position
+        ball.x += dx;
+        ball.y += dy;
 
-        // Check for paddle collisions
-        Object.keys(players).forEach(playerId => {
-            const player_position = players[playerId].pos;
-            const player_angle = arena[playerId].angle;
+        ball.angle = Math.atan2(ball.y, ball.x);
 
-            const bangle = ball.angle - player_angle;
-            const bx = bdist * Math.cos(bangle);
-            const by = bdist * Math.sin(bangle);
+        const bdist = Math.sqrt(ball.x * ball.x + ball.y * ball.y);
+        if (bdist > arena.radius - 10) {
+            // Check for wall collisions
+            if ( (ball.x <= -halfCanvasWidth + bradius || ball.x >= halfCanvasWidth - bradius) && wallCollisionCnt_x==0) {
+                ball.heading = (Math.PI - ball.heading) % (2 * Math.PI);
+                ball.score -= 1;
 
-            if (bx + bradius >= arena.radius && bx - bradius <= arena.radius + arena.pThin) {
-                const bnormy = by - player_position;
-                if (bnormy + bradius > -arena.pLong / 2 && bnormy - bradius < arena.pLong / 2) {
-                    const bnormheading = ball.heading - player_angle;
-                    const newheading = player_angle + Math.PI - bnormheading;
-                    ball.heading = (newheading) % (Math.PI * 2);
-                    if (playerId != lastBounceId) {
+                //Adjust Force
+                let _force = Math.sqrt(force.fx ** 2 + force.fy ** 2);
+                let _v = Math.sqrt(ball.vx ** 2 + ball.vy ** 2);
+                forces[forceSegment].fx = _force * Math.cos(ball.heading);
+                forces[forceSegment].fy = _force * Math.sin(ball.heading+ Math.PI);
+                ball.vx = _v * Math.cos(ball.heading);
+                ball.vy = _v * Math.sin(ball.heading);
+                wallCollisionCnt_x = 1;
+                ball.combo = 0;
+                lastBounceId = 0;
+            } else {
+                wallCollisionCnt_x = 0;
+            }
+            if ((ball.y <= -halfCanvasHeight + bradius || ball.y >= halfCanvasHeight - bradius) && wallCollisionCnt_y==0) {
+                ball.heading = -ball.heading;
+                ball.score -= 1;
+
+                //Adjust Force
+                let _force = Math.sqrt(force.fx ** 2 + force.fy ** 2);
+                let _v = Math.sqrt(ball.vx ** 2 + ball.vy ** 2);
+                forces[forceSegment].fx = _force * Math.cos(ball.heading);
+                forces[forceSegment].fy = _force * Math.sin(ball.heading);
+                ball.vx = _v * Math.cos(ball.heading);
+                ball.vy = _v * Math.sin(ball.heading);
+                wallCollisionCnt_y = 1
+                ball.combo = 0;
+                lastBounceId = 0;
+            } else {
+                wallCollisionCnt_y = 0;
+            }
+
+            
+            // Check for paddle collisions
+            Object.keys(players).forEach(playerId => {
+                const player_position = players[playerId].pos;
+                const player_angle = arena[playerId].angle;
+
+                const bangle = ball.angle - player_angle;
+                const bx = bdist * Math.cos(bangle);
+                const by = bdist * Math.sin(bangle);
+
+                if (bx + bradius >= arena.radius && bx - bradius <= arena.radius + arena.pThin) {
+                    const bnormy = by - player_position;
+                    if (bnormy + bradius > -arena.pLong / 2 && bnormy - bradius < arena.pLong / 2) {
+                        const bnormheading = ball.heading - player_angle;
+                        const newheading = player_angle + Math.PI - bnormheading;
+                        ball.heading = (newheading) % (Math.PI * 2);
+                        ball.score += 1;
+
+
+                        //Reinit forces
+                        reInitForces(forceSegment);
+
+
+                        //Adjust Force
+                        let _force = Math.sqrt(force.fx ** 2 + force.fy ** 2);
+                        let _v = Math.sqrt(ball.vx ** 2 + ball.vy ** 2);
+                        forces[forceSegment].fx = _force * Math.cos(ball.heading);
+                        forces[forceSegment].fy = _force * Math.sin(ball.heading);
+                        ball.vx = _v * Math.cos(ball.heading);
+                        ball.vy = _v * Math.sin(ball.heading);
+                        playerCollisionCnt = 1;
+                        if (playerId != lastBounceId) {
                         ball.score += ball.combo;
                         ball.combo += 1;
                         lastBounceId = playerId;
                     }
+
+                    } else {
+                        playerCollisionCnt = 0;
+                    }
                 }
-            }
-        });
+            });
+            
+        }
     }
 }
 
