@@ -31,7 +31,7 @@ const pSpeed = 5;
 let pMoveOffset = 5;
 let arena = { radius: 140, pLong: 40, pThin: 3 };
 
-let ball = { score: 0 };
+let ball = { score: 0, combo: 0 };
 const bradius = 4;
 
 document.getElementById('button').addEventListener('click', () => {
@@ -106,6 +106,7 @@ function render() {
     ctx.font = "20px serif";
     ctx.fillStyle = 'white';
     ctx.fillText('Score: ' + ball.score, 10, 25);
+    ctx.fillText('Combo: ' + ball.combo, 10, 50);
 
     // SETUP QUADRANTS
     ctx.translate(halfCanvasWidth, halfCanvasHeight);

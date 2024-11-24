@@ -24,6 +24,7 @@ let ball = {
     angle: 0,
     heading: Math.PI / 5,
     score: 0,
+    combo: 0,
 };
 const bradius = 4;
 let bspeed = 0.25;
@@ -118,6 +119,7 @@ setInterval(() => {
     broadcast({ type: 'ballPosition', updatedBall: ball });
 }, 16);
 
+let lastBounceId = 0;
 function advanceState(dt) {
     // player movement
     Object.keys(players).forEach(playerId => {
@@ -142,10 +144,14 @@ function advanceState(dt) {
         if (ball.x <= -halfCanvasWidth + bradius || ball.x >= halfCanvasWidth - bradius) {
             ball.heading = (Math.PI - ball.heading) % (2 * Math.PI);
             ball.score -= 1;
+            ball.combo = 0;
+            lastBounceId = 0;
         }
         if (ball.y <= -halfCanvasHeight + bradius || ball.y >= halfCanvasHeight - bradius) {
             ball.heading = -ball.heading;
             ball.score -= 1;
+            ball.combo = 0;
+            lastBounceId = 0;
         }
 
         // Check for paddle collisions
@@ -163,7 +169,11 @@ function advanceState(dt) {
                     const bnormheading = ball.heading - player_angle;
                     const newheading = player_angle + Math.PI - bnormheading;
                     ball.heading = (newheading) % (Math.PI * 2);
-                    ball.score += 1;
+                    if (playerId != lastBounceId) {
+                        ball.score += ball.combo;
+                        ball.combo += 1;
+                        lastBounceId = playerId;
+                    }
                 }
             }
         });
