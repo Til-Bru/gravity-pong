@@ -22,13 +22,16 @@ if (window.innerWidth > 600 && window.innerHeight > 600) {
         scaleFactor = 2;
     }
 }
- 
+
 
 let myId;
+let myAngle = 0;
 let players = {};
+const pSpeed = 5;
+let pMoveOffset = 5;
 let arena = { radius: 140, pLong: 40, pThin: 3 };
 
-let ball = { score: 0 };
+let ball = { score: 0, combo: 0 };
 const bradius = 4;
 
 document.getElementById('button').addEventListener('click', () => {
@@ -45,8 +48,12 @@ document.getElementById('button').addEventListener('click', () => {
         const message = JSON.parse(event.data);
         if (message.type === 'yourId') {
             myId = message.id;
+            console.log(myId);
         } else if (message.type === 'updateArena') {
             arena = message.updatedArena;
+            console.log(arena[myId].angle);
+            myAngle = arena[myId].angle;
+            pMoveOffset = (myAngle > 1.5708 && myAngle < 4.7123) ? -pSpeed : pSpeed;
             // render();
         } else if (message.type === 'updatePlayers') {
             players = message.updatedPlayers;
@@ -59,9 +66,9 @@ document.getElementById('button').addEventListener('click', () => {
 
     window.addEventListener('keydown', (event) => {
         if (event.key === 'ArrowLeft' || event.key === 'a') {
-            socket.send(JSON.stringify({ type: 'move', offset: 5 }));
+            socket.send(JSON.stringify({ type: 'move', offset: pMoveOffset }));
         } else if (event.key === 'ArrowRight' || event.key === 'd') {
-            socket.send(JSON.stringify({ type: 'move', offset: -5 }));
+            socket.send(JSON.stringify({ type: 'move', offset: -pMoveOffset }));
         }
     });
 
@@ -76,11 +83,10 @@ document.getElementById('button').addEventListener('click', () => {
     window.addEventListener('touchstart', (event) => {
         const touch = event.touches[0];
         const screenWidth = window.innerWidth;
-
         if (touch.clientX < screenWidth / 2) {
-            socket.send(JSON.stringify({ type: 'move', offset: 5 }));
+            socket.send(JSON.stringify({ type: 'move', offset: pMoveOffset }));
         } else {
-            socket.send(JSON.stringify({ type: 'move', offset: -5 }));
+            socket.send(JSON.stringify({ type: 'move', offset: -pMoveOffset }));
         }
     });
 
@@ -100,6 +106,7 @@ function render() {
     ctx.font = "20px serif";
     ctx.fillStyle = 'white';
     ctx.fillText('Score: ' + ball.score, 10, 25);
+    ctx.fillText('Combo: ' + ball.combo, 10, 50);
 
     // SETUP QUADRANTS
     ctx.translate(halfCanvasWidth, halfCanvasHeight);
@@ -110,7 +117,7 @@ function render() {
         const player_position = players[playerId].pos;
         ctx.save();
         ctx.rotate(player_angle);
-        ctx.fillStyle = playerId == myId ? 'yellow' : 'white';
+        ctx.fillStyle = arena[playerId].color;
         ctx.fillRect(arena.radius, player_position - arena.pLong / 2, arena.pThin, arena.pLong);
         ctx.restore();
     });

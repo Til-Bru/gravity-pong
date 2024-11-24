@@ -9,6 +9,7 @@ const wss = new WebSocket.Server({ server });
 const PORT = process.env.PORT || 3000;
 
 let arena = { radius : 140, pLong: 50, pThin: 3 };
+let playerMoveLimit = 150;
 let players = {};
 const playerSpeed = 20;
 
@@ -26,6 +27,7 @@ let ball = {
     vx: 0,
     vy: 0,
     mass: 1
+    combo: 0,
 };
 const bradius = 4;
 let bspeed = 0.25;
@@ -49,12 +51,30 @@ const arrangePlayers = () => {
     arena.pLong = totalPlayers > 5 ? 50 - 5*(totalPlayers-5) : 50;
 };
 
+const playerColors = [
+    '#ff5733', // Red-Orange
+    '#33ff57', // Green
+    '#3357ff', // Blue
+    '#ff33a1', // Pink
+    '#ffbd33', // Yellow-Orange
+    '#33fff5', // Cyan
+    '#306430', // Dark green
+    '#ffffff', // White
+    '#a133ff', // Purple
+    '#FFDE21', // Yellow
+];
+let currentColorIndex = 0;
+
 wss.on('connection', (ws) => {
     const playerId = Date.now(); // Use timestamp as a unique ID
     console.log('A player connected:', playerId);
     ws.send(JSON.stringify({ type: 'yourId', id: playerId }));
 
-    arena[playerId] = { angle: 0 };
+    const pColor = playerColors[currentColorIndex];
+    currentColorIndex = (currentColorIndex + 1) % playerColors.length;
+
+    arena[playerId] = { angle: 0, color: pColor };
+    
     players[playerId] = { pos: 0, offset: 0 };
     arrangePlayers();
 
@@ -105,13 +125,6 @@ setInterval(() => {
     broadcast({ type: 'updatePlayers', updatedPlayers: players });
     broadcast({ type: 'ballPosition', updatedBall: ball });
 }, 16);
-
-
-
-
-
-
-
 
 // Function to generate random forces within a given range
 let previousForceAngle = 0
@@ -181,10 +194,14 @@ let wallCollisionCnt_x = 0
 let wallCollisionCnt_y = 0
 let playerCollisionCnt = 0
 
+let lastBounceId = 0;
 function advanceState(dt) {
     // player movement
     Object.keys(players).forEach(playerId => {
-        players[playerId].pos += players[playerId].offset;
+        if (players[playerId].offset != 0) {
+            const newPos = players[playerId].pos + players[playerId].offset
+            if (Math.abs(newPos) < 130) players[playerId].pos = newPos;
+        }
     })
 
     if (forces.length >= 1) {
@@ -227,6 +244,8 @@ function advanceState(dt) {
                 ball.vx = _v * Math.cos(ball.heading);
                 ball.vy = _v * Math.sin(ball.heading);
                 wallCollisionCnt_x = 1;
+                ball.combo = 0;
+                lastBounceId = 0;
             } else {
                 wallCollisionCnt_x = 0;
             }
@@ -242,6 +261,8 @@ function advanceState(dt) {
                 ball.vx = _v * Math.cos(ball.heading);
                 ball.vy = _v * Math.sin(ball.heading);
                 wallCollisionCnt_y = 1
+                ball.combo = 0;
+                lastBounceId = 0;
             } else {
                 wallCollisionCnt_y = 0;
             }
@@ -277,6 +298,11 @@ function advanceState(dt) {
                         ball.vx = _v * Math.cos(ball.heading);
                         ball.vy = _v * Math.sin(ball.heading);
                         playerCollisionCnt = 1;
+                        if (playerId != lastBounceId) {
+                        ball.score += ball.combo;
+                        ball.combo += 1;
+                        lastBounceId = playerId;
+                    }
 
                     } else {
                         playerCollisionCnt = 0;
